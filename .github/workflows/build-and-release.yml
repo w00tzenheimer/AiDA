@@ -2,12 +2,32 @@
 
 name: Build and Release
 
-# This workflow is triggered whenever a new tag starting with 'v' is pushed.
-# This is the standard practice for versioning and releasing.
 on:
-  push:
-    tags:
-      - 'v*'
+    push:
+        branches:
+            - "main"
+        tags:
+          - 'v*'            
+    pull_request:
+        types:
+            - synchronize
+            - opened
+            - reopened
+            - ready_for_review
+        branches:
+            - "main"
+    workflow_dispatch:
+        inputs:
+            tag:
+                description: "Release tag name (e.g. v1.2.3). If empty, will use latest."
+                required: false
+                default: ""
+
+
+# cancel previous workflow jobs for PRs
+concurrency:
+    group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.run_id }}
+    cancel-in-progress: true
 
 jobs:
   build-and-release:
