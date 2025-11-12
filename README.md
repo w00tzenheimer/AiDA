@@ -118,6 +118,33 @@ If you experience any issues or have bug reports, please:
 * Join our Discord server for support and discussions: [https://discord.gg/JMRkEThbUU](https://discord.gg/JMRkEThbUU)
 * Or, reach out to **"firewl"** on Discord by sending a friend request.
 
+## Building with Docker
+
+For a consistent and reproducible build environment, you can build the plugin inside a Docker container. This method is recommended as it isolates the build process from your host system.
+
+### Prerequisites
+
+*   [Docker](https://www.docker.com/products/docker-desktop/) installed and running.
+
+### Steps
+
+1.  **Build the Docker Image:**
+    Open a terminal in the project's root directory and run the following command. This will automatically download the IDA SDK and compile the plugin inside the container.
+
+    ```bash
+    docker build -t aida-plugin .
+    ```
+
+3.  **Extract the Compiled Plugin:**
+    Once the build is complete, the compiled plugin (`aida.so` or `aida.dll`) is the only file in the final image. You can extract it with this command:
+
+    ```bash
+    docker run --rm --entrypoint "" aida-plugin cat /aida.so > ~/.idapro/plugins/aida.so
+    ```
+    *(Use `/aida.dll` and `aida.dll` if building for Windows)*
+
+    The `aida.so` (or `aida.dll`) file will be created in your current directory. You can then copy it to your IDA plugins folder.
+
 ## License
 
 This project is licensed under the MIT License. See the [LICENSE](LICENSE) file for details.

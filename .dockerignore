@@ -1,0 +1,16 @@
+# Exclude build artifacts
+build/
+
+# Exclude version control history
+.git/
+.gitignore
+
+# Exclude the IDA SDK from the final image
+idasdk/
+
+# Exclude IDE and editor configuration
+.vscode/
+.idea/
+
+# Exclude the Dockerfile itself
+Dockerfile

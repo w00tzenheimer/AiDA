@@ -1,0 +1,12 @@
+ida_add_plugin(aida
+    SOURCES
+        actions.cpp
+        ai_client.cpp
+        aida.cpp
+        ida_utils.cpp
+        settings.cpp
+        ui.cpp
+    LIBRARIES
+        httplib
+        nlohmann_json
+)

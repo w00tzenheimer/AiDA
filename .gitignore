@@ -23,4 +23,7 @@ x64/
 *.log
 
 # just in case
-ai_assistant.cfg 
+ai_assistant.cfg
+
+# CMake build directory
+build/
