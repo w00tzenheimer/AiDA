@@ -39,11 +39,11 @@ public:
     int max_root_func_candidates;
     double temperature;
 
-    static const std::vector<std::string> gemini_models;
-    static const std::vector<std::string> openai_models;
-    static const std::vector<std::string> openrouter_models;
-    static const std::vector<std::string> anthropic_models;
-    static const std::vector<std::string> copilot_models;
+    std::vector<std::string> gemini_models;
+    std::vector<std::string> openai_models;
+    std::vector<std::string> openrouter_models;
+    std::vector<std::string> anthropic_models;
+    std::vector<std::string> copilot_models;
 
     settings_t();
     void save();

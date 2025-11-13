@@ -157,28 +157,28 @@ void SettingsForm::show_and_apply(aida_plugin_t* plugin_instance)
     };
 
     qstrvec_t gemini_models_qsv;
-    for (const auto& m : settings_t::gemini_models) gemini_models_qsv.push_back(m.c_str());
-    int gemini_model_idx = find_model_index(settings_t::gemini_models, g_settings.gemini_model_name);
+    for (const auto& m : g_settings.gemini_models) gemini_models_qsv.push_back(m.c_str());
+    int gemini_model_idx = find_model_index(g_settings.gemini_models, g_settings.gemini_model_name);
 
-    std::vector<std::string> openai_models_vec = settings_t::openai_models;
+    std::vector<std::string> openai_models_vec = g_settings.openai_models;
     qstrvec_t openai_models_qsv;
     for (const auto& m : openai_models_vec) openai_models_qsv.push_back(m.c_str());
     int openai_model_idx = find_model_index(openai_models_vec, g_settings.openai_model_name);
 
     std::vector<std::string> openrouter_models_vec = fetch_openrouter_models_via_api(g_settings.openrouter_api_key.c_str());
     if (openrouter_models_vec.empty())
-        openrouter_models_vec = settings_t::openrouter_models;
+        openrouter_models_vec = g_settings.openrouter_models;
     qstrvec_t openrouter_models_qsv;
     for (const auto& m : openrouter_models_vec) openrouter_models_qsv.push_back(m.c_str());
     int openrouter_model_idx = find_model_index(openrouter_models_vec, g_settings.openrouter_model_name);
 
     qstrvec_t anthropic_models_qsv;
-    for (const auto& m : settings_t::anthropic_models) anthropic_models_qsv.push_back(m.c_str());
-    int anthropic_model_idx = find_model_index(settings_t::anthropic_models, g_settings.anthropic_model_name);
+    for (const auto& m : g_settings.anthropic_models) anthropic_models_qsv.push_back(m.c_str());
+    int anthropic_model_idx = find_model_index(g_settings.anthropic_models, g_settings.anthropic_model_name);
 
     qstrvec_t copilot_models_qsv;
-    for (const auto& m : settings_t::copilot_models) copilot_models_qsv.push_back(m.c_str());
-    int copilot_model_idx = find_model_index(settings_t::copilot_models, g_settings.copilot_model_name);
+    for (const auto& m : g_settings.copilot_models) copilot_models_qsv.push_back(m.c_str());
+    int copilot_model_idx = find_model_index(g_settings.copilot_models, g_settings.copilot_model_name);
 
     qstring gemini_key = g_settings.gemini_api_key.c_str();
     qstring gemini_base_url = g_settings.gemini_base_url.c_str();
@@ -223,8 +223,8 @@ void SettingsForm::show_and_apply(aida_plugin_t* plugin_instance)
 
         g_settings.gemini_api_key = gemini_key.c_str();
         g_settings.gemini_base_url = gemini_base_url.c_str();
-        if (gemini_model_idx < settings_t::gemini_models.size())
-            g_settings.gemini_model_name = settings_t::gemini_models[gemini_model_idx];
+        if (gemini_model_idx < g_settings.gemini_models.size())
+            g_settings.gemini_model_name = g_settings.gemini_models[gemini_model_idx];
 
         g_settings.openai_api_key = openai_key.c_str();
         g_settings.openai_base_url = openai_base_url.c_str();
@@ -237,12 +237,12 @@ void SettingsForm::show_and_apply(aida_plugin_t* plugin_instance)
 
         g_settings.anthropic_api_key = anthropic_key.c_str();
         g_settings.anthropic_base_url = anthropic_base_url.c_str();
-        if (anthropic_model_idx < settings_t::anthropic_models.size())
-            g_settings.anthropic_model_name = settings_t::anthropic_models[anthropic_model_idx];
+        if (anthropic_model_idx < g_settings.anthropic_models.size())
+            g_settings.anthropic_model_name = g_settings.anthropic_models[anthropic_model_idx];
 
         g_settings.copilot_proxy_address = copilot_proxy_addr.c_str();
-        if (copilot_model_idx < settings_t::copilot_models.size())
-            g_settings.copilot_model_name = settings_t::copilot_models[copilot_model_idx];
+        if (copilot_model_idx < g_settings.copilot_models.size())
+            g_settings.copilot_model_name = g_settings.copilot_models[copilot_model_idx];
 
         g_settings.xref_context_count = static_cast<int>(xref_count);
         g_settings.xref_analysis_depth = static_cast<int>(xref_depth);
