@@ -1,4 +1,7 @@
 #ifdef _WIN32
+#ifndef _WINSOCKAPI_
+#define _WINSOCKAPI_  // Prevent Windows.h from including winsock.h
+#endif
 #include <Windows.h> // im sorry linux users idk what to do for you, if u have a solution make a PR and ill accept it
 #endif
 #include "aida_pro.hpp"

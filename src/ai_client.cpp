@@ -315,10 +315,10 @@ void AIClient::generate_hook(ea_t ea, callback_t callback)
     qstring q_func_name;
     get_func_name(&q_func_name, ea);
     std::string func_name = q_func_name.c_str();
-    
+
     static const std::regex non_alnum_re("[^a-zA-Z0-9_]");
     std::string clean_func_name = std::regex_replace(func_name, non_alnum_re, "_");
-    
+
     context["func_name"] = clean_func_name;
 
     std::string prompt = ida_utils::format_prompt(GENERATE_HOOK_PROMPT, context);
@@ -509,14 +509,22 @@ httplib::Headers OpenAIClient::_get_api_headers() const
 }
 json OpenAIClient::_get_api_payload(const std::string& prompt_text, double temperature) const
 {
-    return {
+    json payload = {
         {"model", _model_name},
         {"messages", {
             {{"role", "system"}, {"content", BASE_PROMPT}},
             {{"role", "user"}, {"content", prompt_text}}
-        }},
-        {"temperature", temperature}
+        }}
     };
+
+    // Some OpenAI models (e.g., o1 series) don't support temperature customization
+    // Only include temperature if it's not 0.0 to avoid API errors
+    if (temperature != 0.0)
+    {
+        payload["temperature"] = temperature;
+    }
+
+    return payload;
 }
 
 std::string OpenAIClient::_parse_api_response(const json& jres) const
