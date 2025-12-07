@@ -22,5 +22,10 @@ Release/
 x64/
 *.log
 
+# CMake / Linux Build
+build/
+.cache
+compile_commands.json
+
 # just in case
-ai_assistant.cfg 
+ai_assistant.cfg

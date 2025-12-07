@@ -1,4 +1,6 @@
-#include <Windows.h> // im sorry linux users idk what to do for you, if u have a solution make a PR and ill accept it
+#ifdef _WIN32
+#include <Windows.h>
+#endif
 #include "aida_pro.hpp"
 #include <set>
 
@@ -188,7 +190,7 @@ namespace ida_utils
             }
             catch (const vd_failure_t&)
             {
-                msg("AiDA: Decompilation failed at 0x%a, falling back to assembly.\n", ea);
+                msg("AiDA: Decompilation failed at 0x%llx, falling back to assembly.\n", ea);
             }
         }
 
@@ -196,7 +198,7 @@ namespace ida_utils
         if (pfn == nullptr)
         {
             qstring err;
-            err.sprnt("// Error: Couldn't get function at 0x%a", ea);
+            err.sprnt("// Error: Couldn't get function at 0x%llx", ea);
             return { err.c_str(), "Error" };
         }
 
@@ -241,12 +243,12 @@ namespace ida_utils
         qstring name;
         get_func_name(&name, target_ea);
         if (name.empty())
-            name.sprnt("sub_%a", target_ea);
+            name.sprnt("sub_%llx", target_ea);
 
         auto code_pair = get_function_code(target_ea, settings.xref_code_snippet_lines * 80);
         const char* direction = find_callers ? "Called by" : "Calls";
 
-        result.cat_sprnt("// --- %s: %s at 0x%a (Depth: %d) ---\n",
+        result.cat_sprnt("// --- %s: %s at 0x%llx (Depth: %d) ---\n",
             direction, name.c_str(), target_ea, current_depth);
         result.cat_sprnt("// Language: %s\n", code_pair.second.c_str());
         result.cat_sprnt("```cpp\n%s\n```\n\n", code_pair.first.c_str());
@@ -356,7 +358,7 @@ namespace ida_utils
         qstring struct_name;
         struct_tif.get_type_name(&struct_name);
         if (struct_name.empty())
-            struct_name.sprnt("struct_at_0x%a", ea);
+            struct_name.sprnt("struct_at_0x%llx", ea);
 
         struct member_access_visitor_t : public ctree_visitor_t
         {
@@ -399,7 +401,7 @@ namespace ida_utils
                                 stringified_insns[insn_ea] = line.c_str();
                             }
                             qstring usage_line;
-                            usage_line.sprnt("// 0x%a: %s", expr->ea, stringified_insns[insn_ea].c_str());
+                            usage_line.sprnt("// 0x%llx: %s", expr->ea, stringified_insns[insn_ea].c_str());
                             accesses[member_offset].insert(usage_line.c_str());
                         }
                         else
@@ -408,7 +410,7 @@ namespace ida_utils
                             expr->print1(&insn_str, cfunc);
                             tag_remove(&insn_str);
                             qstring usage_line;
-                            usage_line.sprnt("// 0x%a: %s", expr->ea, insn_str.c_str());
+                            usage_line.sprnt("// 0x%llx: %s", expr->ea, insn_str.c_str());
                             accesses[member_offset].insert(usage_line.c_str());
                         }
                     }
@@ -492,7 +494,7 @@ namespace ida_utils
                 std::string disasm_line = disasm_line_qstr.c_str();
 
                 qstring line;
-                line.sprnt("//  - %s in %s at 0x%a: %s", access_type, func_name.c_str(), xb.from, disasm_line.c_str());
+                line.sprnt("//  - %s in %s at 0x%llx: %s", access_type, func_name.c_str(), xb.from, disasm_line.c_str());
                 member_xrefs.push_back(line);
             }
 
@@ -523,7 +525,7 @@ namespace ida_utils
         if (pfn == nullptr)
         {
             qstring err_msg;
-            err_msg.sprnt("No function found at address 0x%a.", ea);
+            err_msg.sprnt("No function found at address 0x%llx.", ea);
             return { {"ok", false}, {"message", err_msg.c_str()} };
         }
 
@@ -534,7 +536,7 @@ namespace ida_utils
         }
 
         qstring ea_hex_str;
-        ea_hex_str.sprnt("%a", ea);
+        ea_hex_str.sprnt("%llx", ea);
 
         nlohmann::json context = {
             {"ok", true},
@@ -792,7 +794,7 @@ namespace ida_utils
         func_t* pfn = get_func(ea);
         if (pfn == nullptr)
         {
-            msg("AiDA: No function at 0x%a to apply type to.\n", ea);
+            msg("AiDA: No function at 0x%llx to apply type to.\n", ea);
             return;
         }
 
@@ -807,7 +809,7 @@ namespace ida_utils
             cfuncptr_t cfunc = decompile(pfn);
             if (cfunc == nullptr)
             {
-                warning("AiDA: Could not decompile function at 0x%a to apply type.", ea);
+                warning("AiDA: Could not decompile function at 0x%llx to apply type.", ea);
                 return;
             }
 
@@ -1021,7 +1023,7 @@ namespace ida_utils
 
     bool set_clipboard_text(const qstring& text)
     {
-        // im sorry linux users idk what to do for you, if u have a solution make a PR and ill accept it
+#ifdef _WIN32
         if (!OpenClipboard(nullptr))
         {
             warning("AiDA: Could not open clipboard.");
@@ -1073,6 +1075,26 @@ namespace ida_utils
         }
 
         return true;
+#elif defined(__LINUX__) || defined(__linux__)
+#ifdef fwrite
+#undef fwrite
+#endif
+        // Try wl-copy (Wayland) first, then xclip (X11)
+        const char* commands[] = { "wl-copy", "xclip -selection clipboard" };
+        for (const char* cmd : commands) {
+            FILE* pipe = popen(cmd, "w");
+            if (pipe) {
+                fwrite(text.c_str(), 1, text.length(), pipe);
+                pclose(pipe);
+                return true; 
+            }
+        }
+        warning("AiDA: Could not find 'wl-copy' or 'xclip' to set clipboard.");
+        return false;
+#else
+        warning("AiDA: Clipboard copy not implemented for this platform.");
+        return false;
+#endif
     }
 
     std::string format_context_for_clipboard(const nlohmann::json& context)
@@ -1119,14 +1141,14 @@ namespace ida_utils
         func_t* pfn = get_func(func_ea);
         if (pfn == nullptr)
         {
-            warning("AiDA: Function at 0x%a not found for renaming.", func_ea);
+            warning("AiDA: Function at 0x%llx not found for renaming.", func_ea);
             return "";
         }
 
         cfuncptr_t cfunc = decompile(pfn);
         if (cfunc == nullptr)
         {
-            warning("AiDA: Decompilation failed for function at 0x%a.", func_ea);
+            warning("AiDA: Decompilation failed for function at 0x%llx.", func_ea);
             return "";
         }
 
@@ -1260,7 +1282,7 @@ namespace ida_utils
                     {
                         if (set_name(addr, new_name.c_str(), SN_FORCE | SN_NODUMMY))
                         {
-                            summary.cat_sprnt("%s: %s -> %s (at 0x%a)\n",
+                            summary.cat_sprnt("%s: %s -> %s (at 0x%llx)\n",
                                 is_local_to_func ? "Local label" : "Global name",
                                 original_name.c_str(), new_name.c_str(), addr);
                             renamed = true;
