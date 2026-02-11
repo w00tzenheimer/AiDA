@@ -12,7 +12,22 @@ if(NOT DEFINED IDASDK)
 endif()
 
 if(NOT EXISTS "${IDASDK}")
-    message(FATAL_ERROR "IDA SDK not found at ${IDASDK}. Please set IDASDK environment variable or CMake variable.")
+    set(LOCAL_SDK_PATH "${CMAKE_SOURCE_DIR}/.ida_sdk")
+    message(STATUS "IDA SDK not found at ${IDASDK}. Checking local fallback ${LOCAL_SDK_PATH}...")
+    
+    if(NOT EXISTS "${LOCAL_SDK_PATH}")
+        message(STATUS "Cloning IDA SDK from https://github.com/HexRaysSA/ida-sdk to ${LOCAL_SDK_PATH}...")
+        find_package(Git REQUIRED)
+        execute_process(
+            COMMAND ${GIT_EXECUTABLE} clone --depth 1 https://github.com/HexRaysSA/ida-sdk.git ${LOCAL_SDK_PATH}
+            RESULT_VARIABLE git_result
+        )
+        if(NOT git_result EQUAL 0)
+            message(FATAL_ERROR "Failed to clone IDA SDK")
+        endif()
+    endif()
+    
+    set(IDASDK "${LOCAL_SDK_PATH}")
 endif()
 
 # Constants
