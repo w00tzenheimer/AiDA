@@ -33,8 +33,6 @@ jobs:
   build:
     name: Build AiDA plugin for ${{ matrix.os }}
     runs-on: ${{ matrix.runs-on }}
-    env:
-      IDASDK: ${{ matrix.os == 'windows-intel' && 'C:\\idasdk' || '/tmp/idasdk' }}
 
     strategy:
       matrix:

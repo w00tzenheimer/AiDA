@@ -5,7 +5,11 @@ set(CMAKE_CXX_STANDARD 17)
 
 # Check for IDA SDK
 if(NOT DEFINED IDASDK)
-    set(IDASDK "~/.idapro/idasdk91/")
+    if(DEFINED ENV{IDASDK})
+        set(IDASDK "$ENV{IDASDK}")
+    else()
+        set(IDASDK "~/.idapro/idasdk91/")
+    endif()
 endif()
 
 if(NOT EXISTS "${IDASDK}")
@@ -25,6 +29,8 @@ if(NOT EXISTS "${IDASDK}")
     endif()
     
     set(IDASDK "${LOCAL_SDK_PATH}")
+    # Force set environment variable for child processes/includes
+    set(ENV{IDASDK} "${LOCAL_SDK_PATH}")
 endif()
 
 # Setup ida-cmake
