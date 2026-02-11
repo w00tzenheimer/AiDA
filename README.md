@@ -118,6 +118,44 @@ If you experience any issues or have bug reports, please:
 * Join our Discord server for support and discussions: [https://discord.gg/JMRkEThbUU](https://discord.gg/JMRkEThbUU)
 * Or, reach out to **"firewl"** on Discord by sending a friend request.
 
+## Building from Source
+
+AiDA uses CMake for cross-platform building. The build system will automatically download the IDA SDK and other dependencies if they are not found.
+
+### Prerequisites
+*   **CMake** (3.27 or newer)
+*   **C++ Compiler** (GCC, Clang, or MSVC) supporting C++17
+*   **OpenSSL** (Required for secure API communication)
+
+### Build Steps
+
+1.  **Clone the repository:**
+    ```bash
+    git clone https://github.com/sigwl/AiDA.git
+    cd AiDA
+    ```
+
+2.  **Create a build directory:**
+    ```bash
+    mkdir build
+    cd build
+    ```
+
+3.  **Configure:**
+    ```bash
+    cmake .. -DCMAKE_BUILD_TYPE=Release
+    ```
+    *   If you have a local IDA SDK, you can specify it: `-DIDASDK=/path/to/idasdk`
+    *   Otherwise, the build script will automatically clone the SDK for you.
+
+4.  **Build:**
+    ```bash
+    cmake --build . --config Release
+    ```
+
+5.  **Install:**
+    Copy the generated plugin file (`AiDA.dll`, `AiDA.so`, or `AiDA.dylib`) to your IDA plugins directory.
+
 ## License
 
 This project is licensed under the MIT License. See the [LICENSE](LICENSE) file for details.
