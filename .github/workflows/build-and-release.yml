@@ -90,33 +90,7 @@ jobs:
           brew install llvm
           brew install cmake
 
-      # Step 3: Download and set up IDA SDK.
-      # Clone the IDA SDK which is required for building IDA plugins.
-      - name: Setup IDA SDK (Linux/macOS)
-        if: runner.os != 'Windows'
-        run: |
-          git clone --depth 1 https://github.com/HexRaysSA/ida-sdk.git $IDASDK
-          echo "IDASDK=$IDASDK" >> $GITHUB_ENV
-
-      - name: Setup IDA SDK (Windows)
-        if: runner.os == 'Windows'
-        run: |
-          git clone --depth 1 https://github.com/HexRaysSA/ida-sdk.git $env:IDASDK
-          echo "IDASDK=$env:IDASDK" >> $env:GITHUB_ENV
-
-      # Step 3b: Clone ida-cmake into the IDA SDK directory.
-      # ida-cmake is required for building IDA plugins with CMake.
-      - name: Setup ida-cmake (Linux/macOS)
-        if: runner.os != 'Windows'
-        run: |
-          git clone --depth 1 https://github.com/allthingsida/ida-cmake.git $IDASDK/ida-cmake
-
-      - name: Setup ida-cmake (Windows)
-        if: runner.os == 'Windows'
-        run: |
-          git clone --depth 1 https://github.com/allthingsida/ida-cmake.git $env:IDASDK\ida-cmake
-
-      # Step 4: Configure CMake build.
+      # Step 3: Configure CMake build.
       # Set up the build directory and configure the project with CMake.
       - name: Configure CMake (Linux/macOS)
         if: runner.os != 'Windows'
