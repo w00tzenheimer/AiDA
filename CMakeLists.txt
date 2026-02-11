@@ -45,6 +45,13 @@ if(NOT EXISTS "${IDASDK}/ida-cmake/bootstrap.cmake")
     endif()
 endif()
 
+# Fix for GitHub SDK structure (src/include instead of include)
+if(NOT EXISTS "${IDASDK}/include/pro.h" AND EXISTS "${IDASDK}/src/include/pro.h")
+    message(STATUS "Detected GitHub SDK structure, updating IDASDK path to ${IDASDK}/src")
+    set(IDASDK "${IDASDK}/src")
+    set(ENV{IDASDK} "${IDASDK}")
+endif()
+
 include("${IDASDK}/ida-cmake/bootstrap.cmake")
 find_package(idasdk REQUIRED)
 
@@ -52,13 +59,15 @@ find_package(idasdk REQUIRED)
 include_directories("libs/cpp-httplib")
 include_directories("libs/nlohmann")
 find_package(OpenSSL REQUIRED)
-target_link_libraries(AiDA PRIVATE OpenSSL::SSL OpenSSL::Crypto)
 
 # Plugin definition
 file(GLOB_RECURSE SOURCES "src/*.cpp")
 file(GLOB_RECURSE HEADERS "src/*.hpp")
 
 add_ida_plugin(AiDA ${SOURCES} ${HEADERS})
+
+# Link OpenSSL *AFTER* defining the target
+target_link_libraries(AiDA PRIVATE OpenSSL::SSL OpenSSL::Crypto)
 
 if(UNIX AND NOT APPLE)
     target_link_libraries(AiDA PRIVATE pthread)
