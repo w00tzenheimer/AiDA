@@ -58,6 +58,8 @@ if(UNIX)
     set_property(TARGET AiDA PROPERTY POSITION_INDEPENDENT_CODE ON)
 elseif(WIN32)
     target_compile_definitions(AiDA PRIVATE __NT__)
+    # Link IDA lib for Windows
+    target_link_libraries(AiDA PRIVATE "${IDASDK}/lib/x64_win_vc_64/ida.lib")
 endif()
 
 # Link IDA lib
@@ -75,5 +77,9 @@ if(UNIX)
 endif()
 
 # Extension for IDA plugins
-set_target_properties(AiDA PROPERTIES SUFFIX ".so")
+if(WIN32)
+    set_target_properties(AiDA PROPERTIES SUFFIX ".dll")
+else()
+    set_target_properties(AiDA PROPERTIES SUFFIX ".so")
+endif()
 set_target_properties(AiDA PROPERTIES PREFIX "")
