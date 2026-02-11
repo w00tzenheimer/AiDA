@@ -67,7 +67,10 @@ endif()
 add_library(AiDA SHARED ${SOURCES} ${HEADERS})
 
 # Compiler definitions
-if(UNIX)
+if(APPLE)
+    target_compile_definitions(AiDA PRIVATE __MAC__)
+    set_property(TARGET AiDA PROPERTY POSITION_INDEPENDENT_CODE ON)
+elseif(UNIX)
     target_compile_definitions(AiDA PRIVATE __LINUX__ __X64__)
     # Position Independent Code is required for shared libraries
     set_property(TARGET AiDA PROPERTY POSITION_INDEPENDENT_CODE ON)
@@ -94,6 +97,8 @@ endif()
 # Extension for IDA plugins
 if(WIN32)
     set_target_properties(AiDA PROPERTIES SUFFIX ".dll")
+elseif(APPLE)
+    set_target_properties(AiDA PROPERTIES SUFFIX ".dylib")
 else()
     set_target_properties(AiDA PROPERTIES SUFFIX ".so")
 endif()
