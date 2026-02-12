@@ -33,14 +33,9 @@ else()
     set(IDA_CMAKE_DIR "${ida_cmake_SOURCE_DIR}")
 endif()
 
-include("${IDA_CMAKE_DIR}/bootstrap.cmake")
 list(APPEND CMAKE_MODULE_PATH "${IDA_CMAKE_DIR}/cmake")
+include("${IDA_CMAKE_DIR}/bootstrap.cmake")
 find_package(idasdk REQUIRED)
-
-if(NOT COMMAND add_ida_plugin)
-    message(STATUS "add_ida_plugin command not found after find_package. Attempting explicit include...")
-    include("${IDA_CMAKE_DIR}/cmake/idasdk-functions.cmake")
-endif()
 
 # Dependencies
 include_directories("libs/cpp-httplib")
@@ -51,7 +46,7 @@ find_package(OpenSSL REQUIRED)
 file(GLOB_RECURSE SOURCES "src/*.cpp")
 file(GLOB_RECURSE HEADERS "src/*.hpp")
 
-add_ida_plugin(AiDA ${SOURCES} ${HEADERS})
+ida_add_plugin(AiDA ${SOURCES} ${HEADERS})
 
 # Link OpenSSL *AFTER* defining the target
 target_link_libraries(AiDA PRIVATE OpenSSL::SSL OpenSSL::Crypto)
