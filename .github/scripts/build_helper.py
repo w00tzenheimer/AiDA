@@ -5,7 +5,27 @@ import shutil
 from pathlib import Path
 import os # Still needed for environ
 
+"""
+Build Helper Script for AiDA
+============================
+
+This script handles environment setup and artifact management for the AiDA project,
+designed to work across Windows, Linux, and macOS in both CI (GitHub Actions)
+and local development environments.
+
+Key functions:
+1. `setup`: Clones dependencies (IDA SDK, ida-cmake) and configures environment variables.
+2. `copy-artifact`: Locates the built plugin binary and copies it to a centralized `artifacts/` directory.
+"""
+
 def run_command(command, cwd=None):
+    """
+    Executes a shell command.
+
+    Args:
+        command (str): The command to run.
+        cwd (str, optional): The current working directory for the command.
+    """
     print(f"Running: {command}")
     try:
         subprocess.check_call(command, shell=True, cwd=cwd)
@@ -14,6 +34,15 @@ def run_command(command, cwd=None):
         sys.exit(1)
 
 def setup_env():
+    """
+    Sets up the build environment by cloning necessary dependencies.
+
+    Operations:
+    - Clones `ida-sdk` (Hex-Rays GitHub mirror) if not present.
+    - Clones `ida-cmake` build system if not present.
+    - Detects the SDK structure (standard vs. GitHub mirror).
+    - Exports `IDASDK` and `IDA_CMAKE_DIR` to $GITHUB_ENV if running in CI.
+    """
     root_dir = Path.cwd()
     ida_sdk_dir = root_dir / ".ida_sdk"
     
@@ -50,9 +79,23 @@ def setup_env():
          with open(os.environ["GITHUB_ENV"], "a") as f:
             f.write(f"IDA_CMAKE_DIR={ida_cmake_dir}\n")
 
-def copy_artifact(extension):
+def copy_artifact(extension, search_dir=None):
+    """
+    Locates and copies the built plugin artifact to the artifacts directory.
+
+    Args:
+        extension (str): The file extension of the artifact (e.g., 'dll', 'so', 'dylib').
+        search_dir (str, optional): Specific directory to search in. If not provided,
+                                    defaults to standard build output locations.
+    
+    Search Logic:
+    1. If `search_dir` is provided, searches only there.
+    2. Otherwise, searches:
+       - ./build
+       - $IDABIN/plugins (if IDABIN set)
+       - $IDASDK/bin/plugins and $IDASDK/plugins (if IDASDK set)
+    """
     root_dir = Path.cwd()
-    build_dir = root_dir / "build"
     artifacts_dir = root_dir / "artifacts"
     
     filename = f"AiDA.{extension}"
@@ -61,13 +104,23 @@ def copy_artifact(extension):
     # Create artifacts directory if it doesn't exist
     artifacts_dir.mkdir(exist_ok=True)
     
-    search_dirs = [build_dir]
+    search_dirs = []
     
-    # Add IDASDK plugins dir if available
-    if "IDASDK" in os.environ:
-        idasdk_path = Path(os.environ["IDASDK"])
-        search_dirs.append(idasdk_path / "bin" / "plugins")
-        search_dirs.append(idasdk_path / "plugins")
+    if search_dir:
+        search_dirs.append(Path(search_dir))
+    else:
+        # Default search locations
+        search_dirs.append(root_dir / "build")
+        
+        # Check IDABIN environment variable
+        if "IDABIN" in os.environ:
+             search_dirs.append(Path(os.environ["IDABIN"]) / "plugins")
+
+        # Check IDASDK environment variable
+        if "IDASDK" in os.environ:
+            idasdk_path = Path(os.environ["IDASDK"])
+            search_dirs.append(idasdk_path / "bin" / "plugins")
+            search_dirs.append(idasdk_path / "plugins")
 
     found = False
     for search_dir in search_dirs:
@@ -99,13 +152,14 @@ def main():
     # Copy artifact command
     copy_parser = subparsers.add_parser('copy-artifact', help='Copy build artifact')
     copy_parser.add_argument('--extension', required=True, help='Plugin extension (dll, so, dylib)')
+    copy_parser.add_argument('--search-dir', help='Explicit directory to search for artifact')
     
     args = parser.parse_args()
     
     if args.command == 'setup' or args.command is None:
         setup_env()
     elif args.command == 'copy-artifact':
-        copy_artifact(args.extension)
+        copy_artifact(args.extension, args.search_dir)
 
 if __name__ == "__main__":
     main()
