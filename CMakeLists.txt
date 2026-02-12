@@ -39,7 +39,7 @@ find_package(idasdk REQUIRED)
 
 # Dependencies
 include_directories("libs/cpp-httplib")
-include_directories("libs/nlohmann")
+include_directories("libs")
 find_package(OpenSSL REQUIRED)
 
 # Plugin definition
