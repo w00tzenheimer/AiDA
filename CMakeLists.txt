@@ -34,10 +34,11 @@ if(NOT EXISTS "${IDASDK}")
 endif()
 
 # Setup ida-cmake
-if(NOT EXISTS "${IDASDK}/ida-cmake/bootstrap.cmake")
-    message(STATUS "Cloning ida-cmake into ${IDASDK}/ida-cmake...")
+set(IDA_SDK_ROOT "${IDASDK}")
+if(NOT EXISTS "${IDA_SDK_ROOT}/ida-cmake/bootstrap.cmake")
+    message(STATUS "Cloning ida-cmake into ${IDA_SDK_ROOT}/ida-cmake...")
     execute_process(
-        COMMAND ${GIT_EXECUTABLE} clone --depth 1 https://github.com/allthingsida/ida-cmake.git "${IDASDK}/ida-cmake"
+        COMMAND ${GIT_EXECUTABLE} clone --depth 1 https://github.com/allthingsida/ida-cmake.git "${IDA_SDK_ROOT}/ida-cmake"
         RESULT_VARIABLE git_result
     )
     if(NOT git_result EQUAL 0)
@@ -52,7 +53,7 @@ if(NOT EXISTS "${IDASDK}/include/pro.h" AND EXISTS "${IDASDK}/src/include/pro.h"
     set(ENV{IDASDK} "${IDASDK}")
 endif()
 
-include("${IDASDK}/ida-cmake/bootstrap.cmake")
+include("${IDA_SDK_ROOT}/ida-cmake/bootstrap.cmake")
 find_package(idasdk REQUIRED)
 
 # Dependencies
