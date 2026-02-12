@@ -135,20 +135,30 @@ AiDA uses CMake for cross-platform building. The build system will automatically
     cd AiDA
     ```
 
-2.  **Create a build directory:**
+2.  **Setup Environment (Optional but Recommended):**
+    Run the setup script to automatically download the IDA SDK and dependencies if you don't have them set up manually.
+    ```bash
+    # Windows
+    python .github/scripts/setup_build_env.py
+    
+    # Linux/macOS
+    python3 .github/scripts/setup_build_env.py
+    ```
+
+3.  **Create a build directory:**
     ```bash
     mkdir build
     cd build
     ```
 
-3.  **Configure:**
+4.  **Configure:**
     ```bash
     cmake .. -DCMAKE_BUILD_TYPE=Release
     ```
-    *   If you have a local IDA SDK, you can specify it: `-DIDASDK=/path/to/idasdk`
-    *   Otherwise, the build script will automatically clone the SDK for you.
+    *   If you ran the setup script, it will pick up the local `.ida_sdk`.
+    *   If you have your own SDK, set the environment variable `IDASDK` or pass `-DIDASDK=/path/to/sdk`.
 
-4.  **Build:**
+5.  **Build:**
     ```bash
     cmake --build . --config Release
     ```
