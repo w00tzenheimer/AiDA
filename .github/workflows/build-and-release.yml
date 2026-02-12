@@ -56,7 +56,11 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      # Step 2: Set up build environment.
+      # Step 2: Setup Build Environment (SDK & CMake helper)
+      - name: Setup Build Environment
+        run: python .github/scripts/setup_build_env.py
+
+      # Step 3: Set up build environment.
       # Install required dependencies for building the IDA plugin.
       - name: Install build dependencies (Linux)
         if: runner.os == 'Linux'

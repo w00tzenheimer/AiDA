@@ -13,47 +13,28 @@ if(NOT DEFINED IDASDK)
 endif()
 
 if(NOT EXISTS "${IDASDK}")
-    set(LOCAL_SDK_PATH "${CMAKE_SOURCE_DIR}/.ida_sdk")
-    message(STATUS "IDA SDK not found at ${IDASDK}. Checking local fallback ${LOCAL_SDK_PATH}...")
-    
-    if(NOT EXISTS "${LOCAL_SDK_PATH}")
-        message(STATUS "Cloning IDA SDK from https://github.com/HexRaysSA/ida-sdk to ${LOCAL_SDK_PATH}...")
-        find_package(Git REQUIRED)
-        execute_process(
-            COMMAND ${GIT_EXECUTABLE} clone --depth 1 https://github.com/HexRaysSA/ida-sdk.git ${LOCAL_SDK_PATH}
-            RESULT_VARIABLE git_result
-        )
-        if(NOT git_result EQUAL 0)
-            message(FATAL_ERROR "Failed to clone IDA SDK")
-        endif()
-    endif()
-    
-    set(IDASDK "${LOCAL_SDK_PATH}")
-    # Force set environment variable for child processes/includes
-    set(ENV{IDASDK} "${LOCAL_SDK_PATH}")
+    message(WARNING "IDA SDK not found at ${IDASDK}. Build may fail.")
 endif()
 
-# Setup ida-cmake
-set(IDA_SDK_ROOT "${IDASDK}")
-if(NOT EXISTS "${IDA_SDK_ROOT}/ida-cmake/bootstrap.cmake")
-    message(STATUS "Cloning ida-cmake into ${IDA_SDK_ROOT}/ida-cmake...")
-    execute_process(
-        COMMAND ${GIT_EXECUTABLE} clone --depth 1 https://github.com/allthingsida/ida-cmake.git "${IDA_SDK_ROOT}/ida-cmake"
-        RESULT_VARIABLE git_result
+# Check for ida-cmake
+if(DEFINED ENV{IDA_CMAKE_DIR})
+    set(IDA_CMAKE_DIR "$ENV{IDA_CMAKE_DIR}")
+elseif(EXISTS "${CMAKE_SOURCE_DIR}/.ida_cmake")
+    set(IDA_CMAKE_DIR "${CMAKE_SOURCE_DIR}/.ida_cmake")
+else()
+    # Fallback to FetchContent if not provided externally
+    include(FetchContent)
+    FetchContent_Declare(
+      ida_cmake
+      GIT_REPOSITORY https://github.com/allthingsida/ida-cmake.git
+      GIT_TAG        master
     )
-    if(NOT git_result EQUAL 0)
-        message(FATAL_ERROR "Failed to clone ida-cmake")
-    endif()
+    FetchContent_MakeAvailable(ida_cmake)
+    set(IDA_CMAKE_DIR "${ida_cmake_SOURCE_DIR}")
 endif()
 
-# Fix for GitHub SDK structure (src/include instead of include)
-if(NOT EXISTS "${IDASDK}/include/pro.h" AND EXISTS "${IDASDK}/src/include/pro.h")
-    message(STATUS "Detected GitHub SDK structure, updating IDASDK path to ${IDASDK}/src")
-    set(IDASDK "${IDASDK}/src")
-    set(ENV{IDASDK} "${IDASDK}")
-endif()
-
-include("${IDA_SDK_ROOT}/ida-cmake/bootstrap.cmake")
+list(APPEND CMAKE_MODULE_PATH "${IDA_CMAKE_DIR}")
+include("${IDA_CMAKE_DIR}/bootstrap.cmake")
 find_package(idasdk REQUIRED)
 
 # Dependencies
