@@ -133,6 +133,14 @@ def copy_artifact(extension, search_dir=None):
             shutil.copy2(path, artifacts_dir / filename)
             print(f"Copied to: {artifacts_dir / filename}")
             found = True
+            
+            # On Windows, also try to copy bundled OpenSSL DLLs from the same directory
+            if extension == "dll":
+                print("Checking for bundled OpenSSL DLLs...")
+                for dll in path.parent.glob("*.dll"):
+                    if dll.name.lower().startswith(("libssl", "libcrypto")):
+                        shutil.copy2(dll, artifacts_dir / dll.name)
+                        print(f"Copied bundled DLL: {dll.name}")
             break
         
         if found:
@@ -160,6 +168,7 @@ def main():
         setup_env()
     elif args.command == 'copy-artifact':
         copy_artifact(args.extension, args.search_dir)
+
 
 if __name__ == "__main__":
     main()

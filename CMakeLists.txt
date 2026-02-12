@@ -67,4 +67,29 @@ elseif(WIN32)
     target_compile_definitions(AiDA PRIVATE __NT__)
     # Link Winsock2
     target_link_libraries(AiDA PRIVATE ws2_32 crypt32)
+
+    # Copy OpenSSL DLLs to output directory
+    if(OPENSSL_FOUND)
+        # Find the runtime DLLs (OPENSSL_CRYPTO_LIBRARY and OPENSSL_SSL_LIBRARY usually point to .lib files on Windows)
+        # We try to infer the DLL paths from the library paths or use find_program
+        
+        get_filename_component(OPENSSL_LIB_DIR ${OPENSSL_CRYPTO_LIBRARY} DIRECTORY)
+        
+        # Heuristic: DLLs are often in a 'bin' sibling of the 'lib' directory
+        get_filename_component(OPENSSL_ROOT_DIR ${OPENSSL_LIB_DIR} DIRECTORY)
+        set(OPENSSL_BIN_DIR "${OPENSSL_ROOT_DIR}/bin")
+        
+        file(GLOB OPENSSL_DLLS "${OPENSSL_BIN_DIR}/*.dll")
+        
+        if(OPENSSL_DLLS)
+            add_custom_command(TARGET AiDA POST_BUILD
+                COMMAND ${CMAKE_COMMAND} -E copy_if_different
+                ${OPENSSL_DLLS}
+                $<TARGET_FILE_DIR:AiDA>
+                COMMENT "Copying OpenSSL DLLs to output directory"
+            )
+        else()
+             message(WARNING "Could not find OpenSSL DLLs in ${OPENSSL_BIN_DIR} to bundle.")
+        endif()
+    endif()
 endif()
