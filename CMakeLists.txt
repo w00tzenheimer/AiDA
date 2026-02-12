@@ -33,7 +33,7 @@ else()
     set(IDA_CMAKE_DIR "${ida_cmake_SOURCE_DIR}")
 endif()
 
-list(APPEND CMAKE_MODULE_PATH "${IDA_CMAKE_DIR}")
+list(APPEND CMAKE_MODULE_PATH "${IDA_CMAKE_DIR}/cmake")
 include("${IDA_CMAKE_DIR}/bootstrap.cmake")
 find_package(idasdk REQUIRED)
 
