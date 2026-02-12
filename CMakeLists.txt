@@ -1,79 +1,95 @@
-cmake_minimum_required(VERSION 3.10)
+cmake_minimum_required(VERSION 3.27)
+project(aida)
 
-project(AiDA)
-
-# Set C++ standard
 set(CMAKE_CXX_STANDARD 17)
-set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
-# User provided SDK path
+# Check for IDA SDK
 if(NOT DEFINED IDASDK)
-    set(IDASDK "~/.idapro/idasdk91/")
+    if(DEFINED ENV{IDASDK})
+        set(IDASDK "$ENV{IDASDK}")
+    else()
+        set(IDASDK "~/.idapro/idasdk91/")
+    endif()
 endif()
 
 if(NOT EXISTS "${IDASDK}")
-    message(FATAL_ERROR "IDA SDK not found at ${IDASDK}. Please set IDASDK environment variable or CMake variable.")
+    message(WARNING "IDA SDK not found at ${IDASDK}. Build may fail.")
 endif()
 
-# Constants
-if(CMAKE_SIZEOF_VOID_P EQUAL 8)
-    set(IDA_ARCH_64 ON)
-    set(Generated64bitPlugin ON)
-    add_definitions(-D__EA64__)
+# Check for ida-cmake
+if(DEFINED ENV{IDA_CMAKE_DIR})
+    set(IDA_CMAKE_DIR "$ENV{IDA_CMAKE_DIR}")
+elseif(EXISTS "${CMAKE_SOURCE_DIR}/.ida_cmake")
+    set(IDA_CMAKE_DIR "${CMAKE_SOURCE_DIR}/.ida_cmake")
 else()
-    set(IDA_ARCH_64 OFF)
-    set(Generated64bitPlugin OFF)
+    # Fallback to FetchContent if not provided externally
+    include(FetchContent)
+    FetchContent_Declare(
+      ida_cmake
+      GIT_REPOSITORY https://github.com/allthingsida/ida-cmake.git
+      GIT_TAG        main
+    )
+    FetchContent_MakeAvailable(ida_cmake)
+    set(IDA_CMAKE_DIR "${ida_cmake_SOURCE_DIR}")
 endif()
 
-# IDA SDK includes
-include_directories(
-    "${IDASDK}/include"
-    "${IDASDK}/module"
-)
+list(APPEND CMAKE_MODULE_PATH "${IDA_CMAKE_DIR}/cmake")
+include("${IDA_CMAKE_DIR}/bootstrap.cmake")
+find_package(idasdk REQUIRED)
 
-# OpenSSL
+# Dependencies
+include_directories("libs/cpp-httplib")
+include_directories("libs")
 find_package(OpenSSL REQUIRED)
-include_directories(${OPENSSL_INCLUDE_DIR})
 
-# Source files
+# Plugin definition
 file(GLOB_RECURSE SOURCES "src/*.cpp")
 file(GLOB_RECURSE HEADERS "src/*.hpp")
 
-# Dependencies (httplib, json)
-include_directories("libs/cpp-httplib")
-include_directories("libs/nlohmann")
+ida_add_plugin(AiDA SOURCES ${SOURCES} ${HEADERS})
 
-# Link directories for IDA SDK
-if(UNIX)
-    link_directories("${IDASDK}/lib/x64_linux_gcc_64")
-endif()
-
-# Define the plugin library
-add_library(AiDA SHARED ${SOURCES} ${HEADERS})
-
-# Compiler definitions
-if(UNIX)
-    target_compile_definitions(AiDA PRIVATE __LINUX__ __X64__)
-    # Position Independent Code is required for shared libraries
-    set_property(TARGET AiDA PROPERTY POSITION_INDEPENDENT_CODE ON)
-elseif(WIN32)
-    target_compile_definitions(AiDA PRIVATE __NT__)
-endif()
-
-# Link IDA lib
-if(UNIX)
-    target_link_libraries(AiDA PRIVATE ida)
-endif()
-
-
-# Link OpenSSL
+# Link OpenSSL *AFTER* defining the target
 target_link_libraries(AiDA PRIVATE OpenSSL::SSL OpenSSL::Crypto)
 
-# Link phtread
-if(UNIX)
+if(UNIX AND NOT APPLE)
     target_link_libraries(AiDA PRIVATE pthread)
 endif()
 
-# Extension for IDA plugins
-set_target_properties(AiDA PROPERTIES SUFFIX ".so")
-set_target_properties(AiDA PROPERTIES PREFIX "")
+# Platform specific defines
+if(APPLE)
+    target_compile_definitions(AiDA PRIVATE __MAC__)
+    find_library(CORE_FOUNDATION_FRAMEWORK CoreFoundation)
+    find_library(SECURITY_FRAMEWORK Security)
+    find_library(CFNETWORK_FRAMEWORK CFNetwork)
+    find_library(SYSTEM_CONFIGURATION_FRAMEWORK SystemConfiguration)
+    target_link_libraries(AiDA PRIVATE ${CORE_FOUNDATION_FRAMEWORK} ${SECURITY_FRAMEWORK} ${CFNETWORK_FRAMEWORK} ${SYSTEM_CONFIGURATION_FRAMEWORK})
+elseif(UNIX)
+    target_compile_definitions(AiDA PRIVATE __LINUX__)
+elseif(WIN32)
+    target_compile_definitions(AiDA PRIVATE __NT__)
+    # Link Winsock2
+    target_link_libraries(AiDA PRIVATE ws2_32 crypt32)
+
+    # Copy OpenSSL DLLs to output directory
+    if(OPENSSL_FOUND)
+        # Use include dir to find root, avoiding issues with optimized/debug keywords in library list
+        # and quote paths to handle spaces
+        list(GET OPENSSL_INCLUDE_DIR 0 OPENSSL_INC_DIR_SINGLE)
+        
+        get_filename_component(OPENSSL_ROOT_DIR "${OPENSSL_INC_DIR_SINGLE}" DIRECTORY)
+        set(OPENSSL_BIN_DIR "${OPENSSL_ROOT_DIR}/bin")
+        
+        file(GLOB OPENSSL_DLLS "${OPENSSL_BIN_DIR}/*.dll")
+        
+        if(OPENSSL_DLLS)
+            add_custom_command(TARGET AiDA POST_BUILD
+                COMMAND ${CMAKE_COMMAND} -E copy_if_different
+                ${OPENSSL_DLLS}
+                $<TARGET_FILE_DIR:AiDA>
+                COMMENT "Copying OpenSSL DLLs to output directory"
+            )
+        else()
+             message(WARNING "Could not find OpenSSL DLLs in ${OPENSSL_BIN_DIR} to bundle.")
+        endif()
+    endif()
+endif()
