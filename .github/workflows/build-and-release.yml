@@ -58,7 +58,7 @@ jobs:
 
       # Step 2: Setup Build Environment (SDK & CMake helper)
       - name: Setup Build Environment
-        run: python .github/scripts/setup_build_env.py
+        run: python .github/scripts/setup_build_env.py setup
 
       # Step 3: Set up build environment.
       # Install required dependencies for building the IDA plugin.
@@ -129,15 +129,8 @@ jobs:
 
       # Step 7: Copy the compiled plugin to artifacts directory.
       # The CMake build outputs the plugin to the IDA SDK plugins directory.
-      - name: Copy plugin artifact (Linux/macOS)
-        if: runner.os != 'Windows'
-        run: |
-          find build -name "AiDA.${{ matrix.plugin-ext }}" -exec cp {} artifacts/ \;
-
-      - name: Copy plugin artifact (Windows)
-        if: runner.os == 'Windows'
-        run: |
-          Get-ChildItem -Path "build" -Filter "AiDA.${{ matrix.plugin-ext }}" -Recurse | Copy-Item -Destination "artifacts\"
+      - name: Copy plugin artifact
+        run: python .github/scripts/setup_build_env.py copy-artifact --extension ${{ matrix.plugin-ext }}
 
       # Step 8: Upload artifacts for release
       - name: Upload artifacts

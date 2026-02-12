@@ -1,7 +1,9 @@
 import os
 import subprocess
 import sys
-import platform
+import argparse
+import shutil
+from pathlib import Path
 
 def run_command(command, cwd=None):
     print(f"Running: {command}")
@@ -11,7 +13,7 @@ def run_command(command, cwd=None):
         print(f"Error running command: {e}")
         sys.exit(1)
 
-def main():
+def setup_env():
     root_dir = os.getcwd()
     ida_sdk_dir = os.path.join(root_dir, ".ida_sdk")
     
@@ -47,6 +49,49 @@ def main():
     if "GITHUB_ENV" in os.environ:
          with open(os.environ["GITHUB_ENV"], "a") as f:
             f.write(f"IDA_CMAKE_DIR={ida_cmake_dir}\n")
+
+def copy_artifact(extension):
+    root_dir = Path(os.getcwd())
+    build_dir = root_dir / "build"
+    artifacts_dir = root_dir / "artifacts"
+    
+    filename = f"AiDA.{extension}"
+    print(f"Searching for {filename} in {build_dir}...")
+    
+    # Create artifacts directory if it doesn't exist
+    artifacts_dir.mkdir(exist_ok=True)
+    
+    found = False
+    for path in build_dir.rglob(filename):
+        print(f"Found artifact: {path}")
+        shutil.copy2(path, artifacts_dir / filename)
+        print(f"Copied to: {artifacts_dir / filename}")
+        found = True
+        break # Assuming we only need the first match (Release usually)
+        
+    if not found:
+        print(f"Error: Could not find {filename} in {build_dir}")
+        sys.exit(1)
+
+def main():
+    parser = argparse.ArgumentParser(description="Build helper script")
+    subparsers = parser.add_subparsers(dest='command')
+    
+    # Setup command
+    subparsers.add_parser('setup', help='Setup build environment')
+    
+    # Copy artifact command
+    copy_parser = subparsers.add_parser('copy-artifact', help='Copy build artifact')
+    copy_parser.add_argument('--extension', required=True, help='Plugin extension (dll, so, dylib)')
+    
+    args = parser.parse_args()
+    
+    # Default to setup if no command provided (for backward compatibility if needed, 
+    # though explicit is better)
+    if args.command == 'setup' or args.command is None:
+        setup_env()
+    elif args.command == 'copy-artifact':
+        copy_artifact(args.extension)
 
 if __name__ == "__main__":
     main()
