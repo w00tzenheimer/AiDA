@@ -56,21 +56,37 @@ def copy_artifact(extension):
     artifacts_dir = root_dir / "artifacts"
     
     filename = f"AiDA.{extension}"
-    print(f"Searching for {filename} in {build_dir}...")
+    print(f"Looking for {filename}...")
     
     # Create artifacts directory if it doesn't exist
     artifacts_dir.mkdir(exist_ok=True)
     
+    search_dirs = [build_dir]
+    
+    # Add IDASDK plugins dir if available
+    if "IDASDK" in os.environ:
+        idasdk_path = Path(os.environ["IDASDK"])
+        search_dirs.append(idasdk_path / "bin" / "plugins")
+        search_dirs.append(idasdk_path / "plugins")
+
     found = False
-    for path in build_dir.rglob(filename):
-        print(f"Found artifact: {path}")
-        shutil.copy2(path, artifacts_dir / filename)
-        print(f"Copied to: {artifacts_dir / filename}")
-        found = True
-        break 
+    for search_dir in search_dirs:
+        if not search_dir.exists():
+            continue
+            
+        print(f"Searching in {search_dir}...")
+        for path in search_dir.rglob(filename):
+            print(f"Found artifact: {path}")
+            shutil.copy2(path, artifacts_dir / filename)
+            print(f"Copied to: {artifacts_dir / filename}")
+            found = True
+            break
+        
+        if found:
+            break
         
     if not found:
-        print(f"Error: Could not find {filename} in {build_dir}")
+        print(f"Error: Could not find {filename} in any of: {[str(d) for d in search_dirs]}")
         sys.exit(1)
 
 def main():
