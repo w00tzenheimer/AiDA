@@ -139,10 +139,10 @@ AiDA uses CMake for cross-platform building. The build system will automatically
     Run the setup script to automatically download the IDA SDK and dependencies if you don't have them set up manually.
     ```bash
     # Windows
-    python .github/scripts/setup_build_env.py
+    python .github/scripts/build_helper.py setup
     
     # Linux/macOS
-    python3 .github/scripts/setup_build_env.py
+    python3 .github/scripts/build_helper.py setup
     ```
 
 3.  **Create a build directory:**
