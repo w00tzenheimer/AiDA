@@ -72,13 +72,11 @@ elseif(WIN32)
 
     # Copy OpenSSL DLLs to output directory
     if(OPENSSL_FOUND)
-        # Find the runtime DLLs (OPENSSL_CRYPTO_LIBRARY and OPENSSL_SSL_LIBRARY usually point to .lib files on Windows)
-        # We try to infer the DLL paths from the library paths or use find_program
+        # Use include dir to find root, avoiding issues with optimized/debug keywords in library list
+        # and quote paths to handle spaces
+        list(GET OPENSSL_INCLUDE_DIR 0 OPENSSL_INC_DIR_SINGLE)
         
-        get_filename_component(OPENSSL_LIB_DIR ${OPENSSL_CRYPTO_LIBRARY} DIRECTORY)
-        
-        # Heuristic: DLLs are often in a 'bin' sibling of the 'lib' directory
-        get_filename_component(OPENSSL_ROOT_DIR ${OPENSSL_LIB_DIR} DIRECTORY)
+        get_filename_component(OPENSSL_ROOT_DIR "${OPENSSL_INC_DIR_SINGLE}" DIRECTORY)
         set(OPENSSL_BIN_DIR "${OPENSSL_ROOT_DIR}/bin")
         
         file(GLOB OPENSSL_DLLS "${OPENSSL_BIN_DIR}/*.dll")
