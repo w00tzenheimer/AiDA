@@ -23,6 +23,7 @@
 *   **Hook Generation:** Creates C++ MinHook snippets for easy function interception.
 *   **Custom Queries:** Ask any question about a function and get a direct, technical answer.
 *   **Multi-Provider Support:** Works with Google Gemini, OpenAI (ChatGPT), and Anthropic (Claude) models.
+*   **Cross-Platform:** Full support for Windows, Linux, and macOS (Intel & Apple Silicon).
 *   **Native Performance:** Written in C++ for a seamless and fast user experience with no Python dependency.
 
 ## Installation
@@ -120,10 +121,11 @@ If you experience any issues or have bug reports, please:
 
 ## Building from Source
 
-AiDA uses CMake for cross-platform building. The build system will automatically download the IDA SDK and other dependencies if they are not found.
+AiDA uses CMake for cross-platform building (Windows, Linux, macOS). The build system handles dependencies automatically.
 
 ### Prerequisites
 *   **CMake** (3.27 or newer)
+*   **Python 3** (for build helper scripts)
 *   **C++ Compiler** (GCC, Clang, or MSVC) supporting C++17
 *   **OpenSSL** (Required for secure API communication)
 
@@ -135,36 +137,26 @@ AiDA uses CMake for cross-platform building. The build system will automatically
     cd AiDA
     ```
 
-2.  **Setup Environment (Optional but Recommended):**
-    Run the setup script to automatically download the IDA SDK and dependencies if you don't have them set up manually.
-    ```bash
-    # Windows
-    python .github/scripts/build_helper.py setup
+2.  **Setup and Build:**
+    Use the included helper script to setup the environment and build automatically. This script will download the IDA SDK and `ida-cmake` if needed.
     
-    # Linux/macOS
-    python3 .github/scripts/build_helper.py setup
-    ```
-
-3.  **Create a build directory:**
     ```bash
+    # Setup environment (downloads SDK)
+    python .github/scripts/build_helper.py setup
+
+    # Create build directory and configure
     mkdir build
     cd build
-    ```
-
-4.  **Configure:**
-    ```bash
     cmake .. -DCMAKE_BUILD_TYPE=Release
-    ```
-    *   If you ran the setup script, it will pick up the local `.ida_sdk`.
-    *   If you have your own SDK, set the environment variable `IDASDK` or pass `-DIDASDK=/path/to/sdk`.
-
-5.  **Build:**
-    ```bash
+    
+    # Build
     cmake --build . --config Release
     ```
 
-5.  **Install:**
+3.  **Install:**
     Copy the generated plugin file (`AiDA.dll`, `AiDA.so`, or `AiDA.dylib`) to your IDA plugins directory.
+    
+    *   **Windows Note:** The build process will bundle necessary OpenSSL DLLs alongside the plugin if they are found. Ensure these are copied as well if not already present in your system path.
 
 ## License
 

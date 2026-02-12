@@ -24,6 +24,10 @@ x64/
 
 # CMake / Linux Build
 build/
+build*/
+.ida_cmake/
+.ida_sdk/
+artifacts/
 .cache
 compile_commands.json
 
