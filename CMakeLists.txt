@@ -27,7 +27,7 @@ else()
     FetchContent_Declare(
       ida_cmake
       GIT_REPOSITORY https://github.com/allthingsida/ida-cmake.git
-      GIT_TAG        master
+      GIT_TAG        main
     )
     FetchContent_MakeAvailable(ida_cmake)
     set(IDA_CMAKE_DIR "${ida_cmake_SOURCE_DIR}")
