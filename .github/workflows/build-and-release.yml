@@ -1,0 +1,178 @@
+# GitHub Workflow for Building and Releasing the AiDA IDA Pro Plugin
+
+name: Build and Release
+
+on:
+    push:
+        branches:
+            - "main"
+        tags:
+          - 'v*'            
+    pull_request:
+        types:
+            - synchronize
+            - opened
+            - reopened
+            - ready_for_review
+        branches:
+            - "main"
+    workflow_dispatch:
+        inputs:
+            tag:
+                description: "Release tag name (e.g. v1.2.3). If empty, will use latest."
+                required: false
+                default: ""
+
+
+# cancel previous workflow jobs for PRs
+concurrency:
+    group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.run_id }}
+    cancel-in-progress: true
+
+jobs:
+  build:
+    name: Build AiDA plugin for ${{ matrix.os }}
+    runs-on: ${{ matrix.runs-on }}
+
+    strategy:
+      matrix:
+        include:
+          - os: linux-intel
+            runs-on: ubuntu-latest
+            plugin-ext: so
+          - os: windows-intel
+            runs-on: windows-latest
+            plugin-ext: dll
+          - os: macos-intel
+            runs-on: macos-15-intel
+            plugin-ext: dylib
+          - os: macos-arm
+            runs-on: macos-latest
+            plugin-ext: dylib
+
+    steps:
+      # Step 1: Check out the repository's code.
+      # We also need to fetch the submodules (like ida-cmake) for the build to work.
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      # Step 2: Setup Build Environment (SDK & CMake helper)
+      - name: Setup Build Environment
+        run: python .github/scripts/build_helper.py setup
+
+      # Step 3: Set up build environment.
+      # Install required dependencies for building the IDA plugin.
+      - name: Install build dependencies (Linux)
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y build-essential git wget tar libssl-dev
+          # Install CMake 3.27+ from official binaries
+          wget -qO- "https://cmake.org/files/v3.27/cmake-3.27.1-linux-x86_64.tar.gz" | sudo tar --strip-components=1 -xz -C /usr/local
+
+      - name: Install clang (Windows)
+        if: runner.os == 'Windows'
+        uses: crazy-max/ghaction-chocolatey@v3
+        with:
+          args: install llvm
+          
+      - name: Add msbuild to PATH
+        if: runner.os == 'Windows'
+        uses: microsoft/setup-msbuild@v2
+
+      - name: Setup msvc dev environment
+        if: runner.os == 'Windows'
+        uses: TheMrMilchmann/setup-msvc-dev@v4
+        with:
+          arch: x64
+
+      - name: Install build dependencies (macOS)
+        if: runner.os == 'macOS'
+        run: |
+          brew install llvm
+          brew install cmake
+
+      # Step 3: Configure CMake build.
+      # Set up the build directory and configure the project with CMake.
+      - name: Configure CMake (Linux/macOS)
+        if: runner.os != 'Windows'
+        run: |
+          mkdir -p build
+          cd build
+          cmake .. -DCMAKE_BUILD_TYPE=Release
+
+      - name: Configure CMake (Windows)
+        if: runner.os == 'Windows'
+        run: |
+          if (-not (Test-Path build)) { New-Item -ItemType Directory -Path build }
+          cd build
+          cmake .. -DCMAKE_BUILD_TYPE=Release
+
+      # Step 5: Build the plugin.
+      # Compile the AiDA plugin using CMake.
+      - name: Build plugin
+        run: |
+          cd build
+          cmake --build . --config Release
+
+      # Step 6: Create a directory to store the build artifact.
+      # This keeps the workspace clean and provides a predictable location for the compiled plugin.
+      - name: Create artifact directory (Linux/macOS)
+        if: runner.os != 'Windows'
+        run: |
+          mkdir -p artifacts
+
+      - name: Create artifact directory (Windows)
+        if: runner.os == 'Windows'
+        run: |
+          if (-not (Test-Path artifacts)) { New-Item -ItemType Directory -Path artifacts }
+
+      # Step 7: Copy the compiled plugin to artifacts directory.
+      # The CMake build outputs the plugin to the IDA SDK plugins directory.
+      - name: Copy plugin artifact
+        run: python .github/scripts/build_helper.py copy-artifact --extension ${{ matrix.plugin-ext }}
+
+      # Step 8: Upload artifacts for release
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: AiDA-${{ matrix.os }}.${{ matrix.plugin-ext }}
+          path: artifacts/AiDA.${{ matrix.plugin-ext }}
+
+  release:
+    name: Create GitHub Release
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write # This permission is required to create a release and upload assets.
+    if: github.event_name != 'pull_request'
+
+    steps:
+      # Step 1: Download all artifacts from build jobs
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: release-artifacts
+
+      # Step 2: Create a GitHub Release.
+      # This action creates a new release on GitHub, using the tag name for the release title.
+      # The `draft: true` flag means the release will be created as a draft, allowing you
+      # to review it and add release notes before publishing it.
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        if: startsWith(github.ref, 'refs/tags/')
+        with:
+          files: release-artifacts/**/*
+          draft: true # Creates a draft release. Set to false to publish automatically.
+          generate_release_notes: true # Automatically generates release notes from commits.
+
+      - name: Create Nightly Release
+        uses: softprops/action-gh-release@v2
+        if: github.ref == 'refs/heads/main'
+        with:
+          files: release-artifacts/**/*
+          name: "Nightly Build"
+          tag_name: nightly
+          prerelease: true
+          generate_release_notes: true
+          overwrite: true # Overwrites the existing nightly release
