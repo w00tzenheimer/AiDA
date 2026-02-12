@@ -46,7 +46,7 @@ find_package(OpenSSL REQUIRED)
 file(GLOB_RECURSE SOURCES "src/*.cpp")
 file(GLOB_RECURSE HEADERS "src/*.hpp")
 
-ida_add_plugin(AiDA ${SOURCES} ${HEADERS})
+ida_add_plugin(AiDA SOURCES ${SOURCES} ${HEADERS})
 
 # Link OpenSSL *AFTER* defining the target
 target_link_libraries(AiDA PRIVATE OpenSSL::SSL OpenSSL::Crypto)
