@@ -132,19 +132,19 @@ jobs:
       - name: Copy plugin artifact (Linux/macOS)
         if: runner.os != 'Windows'
         run: |
-          find $IDASDK/src/bin/plugins/ -name "aida.${{ matrix.plugin-ext }}" -exec cp {} artifacts/ \;
+          find build -name "AiDA.${{ matrix.plugin-ext }}" -exec cp {} artifacts/ \;
 
       - name: Copy plugin artifact (Windows)
         if: runner.os == 'Windows'
         run: |
-          Get-ChildItem -Path "$env:IDASDK\src\bin\plugins\" -Filter "aida.${{ matrix.plugin-ext }}" -Recurse | Copy-Item -Destination "artifacts\"
+          Get-ChildItem -Path "build" -Filter "AiDA.${{ matrix.plugin-ext }}" -Recurse | Copy-Item -Destination "artifacts\"
 
       # Step 8: Upload artifacts for release
       - name: Upload artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: aida-${{ matrix.os }}.${{ matrix.plugin-ext }}
-          path: artifacts/aida.${{ matrix.plugin-ext }}
+          name: AiDA-${{ matrix.os }}.${{ matrix.plugin-ext }}
+          path: artifacts/AiDA.${{ matrix.plugin-ext }}
 
   release:
     name: Create GitHub Release
