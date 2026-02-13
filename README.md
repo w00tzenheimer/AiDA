@@ -23,6 +23,7 @@
 *   **Hook Generation:** Creates C++ MinHook snippets for easy function interception.
 *   **Custom Queries:** Ask any question about a function and get a direct, technical answer.
 *   **Multi-Provider Support:** Works with Google Gemini, OpenAI (ChatGPT), and Anthropic (Claude) models.
+*   **Cross-Platform:** Full support for Windows, Linux, and macOS (Intel & Apple Silicon).
 *   **Native Performance:** Written in C++ for a seamless and fast user experience with no Python dependency.
 
 ## Installation
@@ -117,6 +118,45 @@ If you experience any issues or have bug reports, please:
 * Create an issue on the [GitHub repository](https://github.com/sigwl/AiDA/issues).
 * Join our Discord server for support and discussions: [https://discord.gg/JMRkEThbUU](https://discord.gg/JMRkEThbUU)
 * Or, reach out to **"firewl"** on Discord by sending a friend request.
+
+## Building from Source
+
+AiDA uses CMake for cross-platform building (Windows, Linux, macOS). The build system handles dependencies automatically.
+
+### Prerequisites
+*   **CMake** (3.27 or newer)
+*   **Python 3** (for build helper scripts)
+*   **C++ Compiler** (GCC, Clang, or MSVC) supporting C++17
+*   **OpenSSL** (Required for secure API communication)
+
+### Build Steps
+
+1.  **Clone the repository:**
+    ```bash
+    git clone https://github.com/sigwl/AiDA.git
+    cd AiDA
+    ```
+
+2.  **Setup and Build:**
+    Use the included helper script to setup the environment and build automatically. This script will download the IDA SDK and `ida-cmake` if needed.
+    
+    ```bash
+    # Setup environment (downloads SDK)
+    python .github/scripts/build_helper.py setup
+
+    # Create build directory and configure
+    mkdir build
+    cd build
+    cmake .. -DCMAKE_BUILD_TYPE=Release
+    
+    # Build
+    cmake --build . --config Release
+    ```
+
+3.  **Install:**
+    Copy the generated plugin file (`AiDA.dll`, `AiDA.so`, or `AiDA.dylib`) to your IDA plugins directory.
+    
+    *   **Windows Note:** The build process will bundle necessary OpenSSL DLLs alongside the plugin if they are found. Ensure these are copied as well if not already present in your system path.
 
 ## License
 

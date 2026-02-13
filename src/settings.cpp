@@ -8,9 +8,28 @@ static std::string get_trimmed_json_string(const nlohmann::json& j, const char* 
     return q_val.c_str();
 }
 
+static void load_models_from_json(const nlohmann::json& j, const char* key, std::vector<std::string>& target, const std::vector<std::string>& default_models)
+{
+    if (j.contains(key) && j[key].is_array())
+    {
+        target.clear();
+        for (const auto& model : j[key])
+        {
+            if (model.is_string())
+            {
+                target.push_back(model.get<std::string>());
+            }
+        }
+    }
+    else
+    {
+        target = default_models;
+    }
+}
+
 settings_t g_settings;
 
-const std::vector<std::string> settings_t::gemini_models = {
+static const std::vector<std::string> default_gemini_models = {
     "gemini-3-pro-preview",
     "gemini-2.5-pro",
     "gemini-2.5-flash",
@@ -36,7 +55,7 @@ const std::vector<std::string> settings_t::gemini_models = {
     "gemma-3n-e2b-it"
 };
 
-const std::vector<std::string> settings_t::openai_models = {
+static const std::vector<std::string> default_openai_models = {
   "gpt-5.1 Instant",
   "gpt-5.1 Thinking",
   "gpt-5",
@@ -60,7 +79,7 @@ const std::vector<std::string> settings_t::openai_models = {
   "gpt-3.5-turbo-16k",
 };
 
-const std::vector<std::string> settings_t::openrouter_models = {
+static const std::vector<std::string> default_openrouter_models = {
   // Common OpenRouter model IDs (uses OpenAI-compatible Messages API)
   "moonshotai/kimi-k2:free",
   "openai/gpt-oss-20b:free",
@@ -69,7 +88,7 @@ const std::vector<std::string> settings_t::openrouter_models = {
   
 };
 
-const std::vector<std::string> settings_t::anthropic_models = {
+static const std::vector<std::string> default_anthropic_models = {
   "claude-opus-4-5 (High Effort)",
   "claude-opus-4-5 (Medium Effort)",
   "claude-opus-4-5 (Low Effort)",
@@ -90,33 +109,30 @@ const std::vector<std::string> settings_t::anthropic_models = {
   "claude-instant-v1.2",
 };
 
-const std::vector<std::string> settings_t::copilot_models = {
-    "claude-sonnet-4",
-    "claude-3.7-sonnet-thought",
-    "gemini-2.5-pro",
-    "claude-3.7-sonnet",
-    "gpt-4.1-2025-04-14",
+static const std::vector<std::string> default_copilot_models = {
     "gpt-4.1",
-    "o4-mini-2025-04-16",
-    "o4-mini",
-    "o3-mini-2025-01-31",
-    "o3-mini",
-    "o3-mini-paygo",
-    "claude-3.5-sonnet",
-    "gemini-2.0-flash-001",
-    "gpt-4o-2024-11-20",
-    "gpt-4o-2024-08-06",
-    "gpt-4o-2024-05-13",
-    "gpt-4o",
-    "gpt-4o-copilot",
-    "gpt-4-o-preview",
-    "gpt-4-0125-preview",
-    "gpt-4",
-    "gpt-4-0613",
-    "gpt-4o-mini-2024-07-18",
-    "gpt-4o-mini",
+    "gpt-5",
     "gpt-3.5-turbo",
     "gpt-3.5-turbo-0613",
+    "gpt-4o-mini",
+    "gpt-4o-mini-2024-07-18",
+    "gpt-4",
+    "gpt-4-0613",
+    "gpt-4-0125-preview",
+    "gpt-4o",
+    "gpt-4o-2024-11-20",
+    "gpt-4o-2024-05-13",
+    "gpt-4-o-preview",
+    "gpt-4o-2024-08-06",
+    "gpt-41-copilot",
+    "gpt-5-codex",
+    "text-embedding-ada-002",
+    "text-embedding-3-small",
+    "text-embedding-3-small-inference",
+    "claude-sonnet-4",
+    "claude-sonnet-4.5",
+    "claude-haiku-4.5",
+    "gpt-4.1-2025-04-14",
 };
 
 static void to_json(nlohmann::json& j, const settings_t& s)
@@ -126,16 +142,21 @@ static void to_json(nlohmann::json& j, const settings_t& s)
         {"gemini_api_key", s.gemini_api_key},
         {"gemini_model_name", s.gemini_model_name},
         {"gemini_base_url", s.gemini_base_url},
+        {"gemini_models", s.gemini_models},
         {"openai_api_key", s.openai_api_key},
         {"openai_model_name", s.openai_model_name},
         {"openai_base_url", s.openai_base_url},
+        {"openai_models", s.openai_models},
         {"openrouter_api_key", s.openrouter_api_key},
         {"openrouter_model_name", s.openrouter_model_name},
+        {"openrouter_models", s.openrouter_models},
         {"anthropic_api_key", s.anthropic_api_key},
         {"anthropic_model_name", s.anthropic_model_name},
         {"anthropic_base_url", s.anthropic_base_url},
+        {"anthropic_models", s.anthropic_models},
         {"copilot_proxy_address", s.copilot_proxy_address},
         {"copilot_model_name", s.copilot_model_name},
+        {"copilot_models", s.copilot_models},
         {"xref_context_count", s.xref_context_count},
         {"xref_analysis_depth", s.xref_analysis_depth},
         {"xref_code_snippet_lines", s.xref_code_snippet_lines},
@@ -155,20 +176,25 @@ static void from_json(const nlohmann::json& j, settings_t& s)
     s.gemini_api_key = get_trimmed_json_string(j, "gemini_api_key", d.gemini_api_key);
     s.gemini_model_name = j.value("gemini_model_name", d.gemini_model_name);
     s.gemini_base_url = get_trimmed_json_string(j, "gemini_base_url", d.gemini_base_url);
+    load_models_from_json(j, "gemini_models", s.gemini_models, d.gemini_models);
 
     s.openai_api_key = get_trimmed_json_string(j, "openai_api_key", d.openai_api_key);
     s.openai_model_name = j.value("openai_model_name", d.openai_model_name);
     s.openai_base_url = get_trimmed_json_string(j, "openai_base_url", d.openai_base_url);
+    load_models_from_json(j, "openai_models", s.openai_models, d.openai_models);
 
     s.openrouter_api_key = get_trimmed_json_string(j, "openrouter_api_key", d.openrouter_api_key);
     s.openrouter_model_name = j.value("openrouter_model_name", d.openrouter_model_name);
+    load_models_from_json(j, "openrouter_models", s.openrouter_models, d.openrouter_models);
 
     s.anthropic_api_key = get_trimmed_json_string(j, "anthropic_api_key", d.anthropic_api_key);
     s.anthropic_model_name = j.value("anthropic_model_name", d.anthropic_model_name);
     s.anthropic_base_url = get_trimmed_json_string(j, "anthropic_base_url", d.anthropic_base_url);
+    load_models_from_json(j, "anthropic_models", s.anthropic_models, d.anthropic_models);
 
     s.copilot_proxy_address = j.value("copilot_proxy_address", d.copilot_proxy_address);
     s.copilot_model_name = j.value("copilot_model_name", d.copilot_model_name);
+    load_models_from_json(j, "copilot_models", s.copilot_models, d.copilot_models);
 
     s.xref_context_count = j.value("xref_context_count", d.xref_context_count);
     s.xref_analysis_depth = j.value("xref_analysis_depth", d.xref_analysis_depth);
@@ -286,16 +312,21 @@ settings_t::settings_t() :
     gemini_api_key(""),
     gemini_model_name("gemini-2.5-flash"),
     gemini_base_url(""),
+    gemini_models(default_gemini_models),
     openai_api_key(""),
     openai_model_name("gpt-5"),
     openai_base_url(""),
+    openai_models(default_openai_models),
     openrouter_api_key(""),
     openrouter_model_name("moonshotai/kimi-k2:free"),
+    openrouter_models(default_openrouter_models),
     anthropic_api_key(""),
     anthropic_model_name("claude-sonnet-4-5"),
     anthropic_base_url(""),
+    anthropic_models(default_anthropic_models),
     copilot_proxy_address("http://127.0.0.1:4141"),
     copilot_model_name("gpt-4.1"),
+    copilot_models(default_copilot_models),
     xref_context_count(5),
     xref_analysis_depth(3),
     xref_code_snippet_lines(30),
